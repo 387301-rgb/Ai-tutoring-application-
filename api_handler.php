@@ -1,38 +1,55 @@
 <?php
-function get_ai_response($user_prompt) {
-    // This pulls 'gsk_...' from your Secrets
-    $api_key = $_ENV['Tutoring']; 
+// api_handler.php
+$apiKey = "";
+$groqApiUrl = "https://api.groq.com/openai/v1/chat/completions";
 
-    // Use the Groq API endpoint
-    $url = "https://api.groq.com/openai/v1/chat/completions"; 
+// Get the question from the POST data
+$question = $_POST['question'] ?? null;
 
-    $data = [
-        "model" => "grok-4.1-fast-reasoning", // Latest high-speed reasoning model
-        "messages" => [
-            ["role" => "system", "content" => "You are an expert tutor. Break down complex topics simply."],
-            ["role" => "user", "content" => $user_prompt]
-        ],
-        "temperature" => 0.6
-    ];
+if (empty($question)) {
+    $error = "No question provided";
+    header("Location: index.php?error=" . urlencode($error));
+    exit;
+}
 
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        "Content-Type: application/json",
-        "Authorization: Bearer " . $api_key
-    ]);
+// Data to send to Groq API
+$data = [
+    "model" => "llama3-70b-8192", // Updated model name
+    "messages" => [
+        ["role" => "user", "content" => $question]
+    ]
+];
 
-    $response = curl_exec($ch);
-    $result = json_decode($response, true);
-    curl_close($ch);
+// Initialize cURL
+$ch = curl_init($groqApiUrl);
 
-    // Return the content or a helpful error message
-    if (isset($result['choices'][0]['message']['content'])) {
-        return $result['choices'][0]['message']['content'];
+// Set cURL options
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    "Authorization: Bearer $apiKey",
+    "Content-Type": application/json"
+]);
+
+// Execute the request
+$response = curl_exec($ch);
+
+// Check for errors
+if (curl_errno($ch)) {
+    $error = "Error: " . curl_error($ch);
+    header("Location: index.php?error=" . urlencode($error));
+} else {
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    if ($httpCode !== 200) {
+        $error = "Groq API request failed with HTTP code $httpCode. Response: $response";
+        header("Location: index.php?error=" . urlencode($error));
     } else {
-        return "API Error: " . ($result['error']['message'] ?? "Unknown issue. Check your API key.");
+        $responseData = json_encode(json_decode($response), JSON_PRETTY_PRINT);
+        header("Location: index.php?response=" . urlencode($responseData));
     }
 }
+
+// Close cURL
+curl_close($ch);
 ?>
