@@ -1,43 +1,55 @@
 <?php
 // api_handler.php
+$groqApiKey = getenv('GROQ_API_KEY');
+$groqApiUrl = "https://api.groq.com/openai/v1/chat/completions";
 
-// Load environment variables (e.g., from .env or Replit secrets)
-$groqApiKey = getenv('GROQ_API_KEY'); // Use Replit's Secrets/Environment Variables
+// Get the question from the POST data
+$question = $_POST['question'] ?? null;
 
-if (!$groqApiKey) {
-    die("Error: Groq API key not found. Set the GROQ_API_KEY environment variable.");
+if (empty($question)) {
+    $error = "No question provided";
+    header("Location: index.php?error=" . urlencode($error));
+    exit;
 }
 
-// Example: Initialize Groq client (pseudo-code, replace with actual Groq SDK usage)
-function callGroqAPI($prompt) {
-    global $groqApiKey;
+// Data to send to Groq API
+$data = [
+    "model" => "llama3-70b-8192", // Updated model name
+    "messages" => [
+        ["role" => "user", "content" => $question]
+    ]
+];
 
-    $url = 'https://api.groq.com/v1/chat/completions'; // Replace with actual Groq API endpoint
-    $headers = [
-        'Authorization: Bearer ' . $groqApiKey,
-        'Content-Type: application/json',
-    ];
-    $data = [
-        'model' => 'groq-model-name', // Replace with actual model name
-        'messages' => [
-            ['role' => 'user', 'content' => $prompt],
-        ],
-    ];
+// Initialize cURL
+$ch = curl_init($groqApiUrl);
 
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+// Set cURL options
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    "Authorization: Bearer $apiKey",
+    "Content-Type": application/json"
+]);
 
-    $response = curl_exec($ch);
-    curl_close($ch);
+// Execute the request
+$response = curl_exec($ch);
 
-    return json_decode($response, true);
+// Check for errors
+if (curl_errno($ch)) {
+    $error = "Error: " . curl_error($ch);
+    header("Location: index.php?error=" . urlencode($error));
+} else {
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    if ($httpCode !== 200) {
+        $error = "Groq API request failed with HTTP code $httpCode. Response: $response";
+        header("Location: index.php?error=" . urlencode($error));
+    } else {
+        $responseData = json_encode(json_decode($response), JSON_PRETTY_PRINT);
+        header("Location: index.php?response=" . urlencode($responseData));
+    }
 }
 
-// Example usage
-$prompt = "Hello, Groq!";
-$result = callGroqAPI($prompt);
-print_r($result);
+// Close cURL
+curl_close($ch);
 ?>
