@@ -1,6 +1,12 @@
 <?php
 // api_handler.php
-$groqApiKey = getenv('GROQ_API_KEY');
+$groqApiKey = getenv('GROQ_API_KEY') ?: ($_ENV['GROQ_API_KEY'] ?? $_SERVER['GROQ_API_KEY'] ?? '');
+
+if (empty($groqApiKey)) {
+    $error = "GROQ_API_KEY is not configured. Please add it to your environment secrets.";
+    header("Location: index.php?error=" . urlencode($error));
+    exit;
+}
 $groqApiUrl = "https://api.groq.com/openai/v1/chat/completions";
 
 // Get the question from the POST data
@@ -14,7 +20,7 @@ if (empty($question)) {
 
 // Data to send to Groq API
 $data = [
-    "model" => "llama3-70b-8192",
+    "model" => "llama-3.3-70b-versatile",
     "messages" => [
         ["role" => "user", "content" => $question]
     ]
