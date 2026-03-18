@@ -11,10 +11,10 @@
             --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            margin: 0; 
-            padding: 0; 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
             background: var(--bg-gradient);
             color: #333;
             min-height: 100vh;
@@ -44,10 +44,10 @@
         nav a:hover { color: var(--accent-color); }
 
         /* --- Main Container --- */
-        .container { 
-            max-width: 600px; 
-            margin: 50px auto; 
-            padding: 40px; 
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 40px;
             background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
@@ -74,24 +74,27 @@
 
         /* --- Form Styling --- */
         form { display: flex; flex-direction: column; gap: 15px; }
-        
+
         label { text-align: left; font-weight: 600; font-size: 0.9rem; }
 
-        input[type="text"] { 
-            padding: 12px; 
-            border: 2px solid #ddd; 
-            border-radius: 8px; 
+        input[type="text"],
+        select {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
             font-size: 1rem;
             transition: border-color 0.3s;
+            width: 100%;
         }
 
-        input[type="text"]:focus {
+        input[type="text"]:focus,
+        select:focus {
             outline: none;
             border-color: var(--primary-color);
         }
 
-        button { 
-            padding: 12px; 
+        button {
+            padding: 12px;
             background: var(--primary-color);
             color: white;
             border: none;
@@ -102,23 +105,45 @@
             transition: background 0.3s, transform 0.2s;
         }
 
-        button:hover { 
-            background: #357abd; 
+        button:hover {
+            background: #357abd;
             transform: scale(1.02);
         }
 
+        /* --- Dropdown Container --- */
+        .dropdown-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .dropdown-container > div {
+            flex: 1;
+        }
+
         /* --- Response Box --- */
-        #response { 
-            margin-top: 30px; 
-            padding: 15px; 
+        #response {
+            margin-top: 30px;
+            padding: 15px;
             background: #f9f9f9;
             border-left: 5px solid var(--primary-color);
-            border-radius: 4px; 
-            white-space: pre-wrap; 
+            border-radius: 4px;
+            white-space: pre-wrap;
             text-align: left;
         }
 
         .error { color: #e74c3c; margin-top: 10px; font-weight: bold; }
+
+        /* --- Metadata Box --- */
+        #metadata {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f0f8ff;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            text-align: left;
+            border-left: 3px solid var(--accent-color);
+        }
     </style>
 </head>
 <body>
@@ -135,11 +160,36 @@
 
     <div class="container">
         <div class="floating-icon">✏️</div>
-        
+
         <h1>Tutor Me!</h1>
         <p class="sub-header">Enter here</p>
 
         <form id="groqForm" action="api_handler.php" method="post">
+            <!-- Dropdowns for Grade Level and Subject -->
+            <div class="dropdown-container">
+                <div>
+                    <label for="grade-level">Grade Level:</label>
+                    <select id="grade-level" name="grade-level" required>
+                        <option value="">Select Grade</option>
+                        <option value="elementary">Elementary</option>
+                        <option value="middle">Middle School</option>
+                        <option value="high">High School</option>
+                        <option value="college">College</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="subject">Subject:</label>
+                    <select id="subject" name="subject" required>
+                        <option value="">Select Subject</option>
+                        <option value="math">Math</option>
+                        <option value="science">Science</option>
+                        <option value="history">History</option>
+                        <option value="english">English</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Question Input -->
             <label for="question">What are we learning today?</label>
             <input type="text" id="question" name="question" placeholder="e.g. Explain photosynthesis like I'm five" required>
             <button type="submit">Get Answer</button>
@@ -149,6 +199,13 @@
             <h2>Response:</h2>
             <div id="response">
                 <?php echo htmlspecialchars($_GET['response']); ?>
+            </div>
+
+            <!-- Metadata Box -->
+            <div id="metadata">
+                <p><strong>Grade Level:</strong> <?php echo htmlspecialchars($_GET['grade'] ?? 'Unknown'); ?></p>
+                <p><strong>Subject:</strong> <?php echo htmlspecialchars($_GET['subject'] ?? 'Unknown'); ?></p>
+                <p><strong>Credits Used:</strong> <?php echo htmlspecialchars($_GET['tokens'] ?? 'Unknown'); ?></p>
             </div>
         <?php endif; ?>
 
